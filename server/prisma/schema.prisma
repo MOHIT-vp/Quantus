@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SALES_REP
+  SALES_MANAGER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  DISQUALIFIED
+}
+
+enum PipelineStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  MEETING
+  EMAIL
+  FOLLOW_UP
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // bcrypt hash, never exposed in API responses
+  name      String
+  role      Role
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assignedLeads         Lead[]        @relation("LeadAssignment")
+  assignedOpportunities Opportunity[] @relation("OpportunityAssignment")
+  assignedCustomers     Customer[]    @relation("CustomerAssignment")
+  activities            Activity[]    @relation("ActivityCreator")
+
+  @@map("users")
+}
+
+model Lead {
+  id           String     @id @default(uuid())
+  companyName  String     @map("company_name")
+  contactName  String     @map("contact_name")
+  contactEmail String     @map("contact_email")
+  contactPhone String?    @map("contact_phone")
+  source       String     // e.g., "Website", "Referral", "Cold Call", "LinkedIn", "Trade Show"
+  status       LeadStatus @default(NEW)
+  notes        String?
+  assignedTo   String     @map("assigned_to")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  assignedUser  User          @relation("LeadAssignment", fields: [assignedTo], references: [id])
+  opportunities Opportunity[]
+  customer      Customer?
+
+  @@index([assignedTo])
+  @@index([status])
+  @@map("leads")
+}
+
+model Opportunity {
+  id                String        @id @default(uuid())
+  title             String
+  dealValue         Decimal       @map("deal_value") @db.Decimal(12, 2)
+  expectedCloseDate DateTime?     @map("expected_close_date")
+  stage             PipelineStage @default(NEW)
+  notes             String?
+  leadId            String        @map("lead_id")
+  assignedTo        String        @map("assigned_to")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  lead         Lead       @relation(fields: [leadId], references: [id])
+  assignedUser User       @relation("OpportunityAssignment", fields: [assignedTo], references: [id])
+  activities   Activity[]
+
+  @@index([assignedTo])
+  @@index([stage])
+  @@index([leadId])
+  @@map("opportunities")
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  companyName String   @map("company_name")
+  industry    String?
+  website     String?
+  address     String?
+  leadId      String?  @unique @map("lead_id")
+  assignedTo  String   @map("assigned_to")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  lead         Lead?      @relation(fields: [leadId], references: [id])
+  assignedUser User       @relation("CustomerAssignment", fields: [assignedTo], references: [id])
+  contacts     Contact[]
+  activities   Activity[]
+
+  @@index([assignedTo])
+  @@map("customers")
+}
+
+model Contact {
+  id         String   @id @default(uuid())
+  name       String
+  email      String?
+  phone      String?
+  jobTitle   String?  @map("job_title")
+  customerId String   @map("customer_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("contacts")
+}
+
+model Activity {
+  id            String       @id @default(uuid())
+  type          ActivityType
+  description   String
+  dueDate       DateTime?    @map("due_date")
+  completed     Boolean      @default(false)
+  opportunityId String?      @map("opportunity_id")
+  customerId    String?      @map("customer_id")
+  createdBy     String       @map("created_by")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  creator     User         @relation("ActivityCreator", fields: [createdBy], references: [id])
+
+  @@index([opportunityId])
+  @@index([customerId])
+  @@index([dueDate, completed])
+  @@index([createdBy])
+  @@map("activities")
+}
