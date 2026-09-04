@@ -2,7 +2,7 @@
 <img width="1509" height="858" alt="Screenshot 2026-08-31 at 8 34 20 PM" src="https://github.com/user-attachments/assets/762d453c-51cc-49d6-a3a6-de2cbe665764" />
 <img width="1509" height="858" alt="Screenshot 2026-08-31 at 8 35 09 PM" src="https://github.com/user-attachments/assets/cc1258f9-2c96-4feb-b646-01304ee7a031" />
 <img width="1509" height="858" alt="Screenshot 2026-08-31 at 8 34 42 PM" src="https://github.com/user-attachments/assets/4a9b993d-50b8-40e4-8da6-29321f2fe84c" />
-# Quantus (formerly PipelineIQ)
+## Quantus
 
 Quantus is a production-grade B2B CRM MVP built specifically for high-net-worth treasury management, private banking, and institutional sales teams.
 
